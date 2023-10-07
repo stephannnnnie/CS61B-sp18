@@ -1,6 +1,7 @@
 /** If you project is set up properly, this file should execute. 
 * One thing you might consider is to try printing out the sequence of
 * operations */
+import static org.junit.Assert.*;
 public class StudentArrayDequeLauncher {
     public static void main(String[] args) {
         StudentArrayDeque<Integer> sad1 = new StudentArrayDeque<>();
