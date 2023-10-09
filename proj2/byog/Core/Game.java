@@ -16,11 +16,13 @@ public class Game {
     TERenderer ter = new TERenderer();
     /* Feel free to change the width and height. */
     public static final int WIDTH = 80;
-    public static final int HEIGHT = 43;
+    public static final int HEIGHT = 40;
     public static long SEED;
 
     private int steps;
     private boolean gameOver;
+    private int health;
+    private int blessing;
 
     /**
      * Method used for playing a fresh game. The game should start from the main menu.
@@ -30,6 +32,8 @@ public class Game {
         menu();
         steps=0;
         gameOver=false;
+        health = 5;
+        blessing=0;
         while (true) {
             String input="";
             if (!StdDraw.hasNextKeyTyped()) {
@@ -60,17 +64,17 @@ public class Game {
                 StdDraw.pause(500);
 
                 ter.initialize(WIDTH,HEIGHT);
-                TETile[][] newWorld = WorldGenerator.fillTiles();
-                ter.renderFrame(newWorld);
-                play(newWorld);
+                Pool newPool = WorldGenerator.fillTiles();
+                ter.renderFrame(newPool.getWorld());
+                play(newPool);
                 break;
 
             }else if (key=='L'||key=='l'){
                 gameOver=false;
-                TETile[][] world = load();
+                Pool oldPool = load();
                 ter.initialize(WIDTH,HEIGHT);
-                ter.renderFrame(world);
-                play(world);
+                ter.renderFrame(oldPool.getWorld());
+                play(oldPool);
                 break;
             }else if (key=='q'||key=='Q'){
                 gameOver=true;
@@ -112,9 +116,88 @@ public class Game {
         StdDraw.show();
     }
 
-    public void play(TETile[][] world){
+    public void play(Pool pool){
+        //考虑要线程吗
+        while (!gameOver){
+            StdDraw.enableDoubleBuffering();
+            hud(pool);
+            if (!StdDraw.hasNextKeyTyped()){
+                continue;
+            }
+            char dir = StdDraw.nextKeyTyped();
+            if (health==0){
+                gameOver=true;
+                StdDraw.clear(Color.BLACK);
+                drawNote("***Game Over***");
+                StdDraw.pause(6000);
+                break;
+            }else if (pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()-1].equals(Tileset.LOCKED_DOOR)){
+                gameOver=true;
+                StdDraw.enableDoubleBuffering();
+                StdDraw.clear(Color.BLACK);
+                Font font = new Font("Georgia", Font.PLAIN,25);
+                StdDraw.setFont(font);
+                StdDraw.setPenColor(Color.white);
+                StdDraw.text(WIDTH/2,HEIGHT/2,"You collect "+blessing+" vapor-eon in total");
+                drawNote("OMG! You Did It, Winner!");
+
+                StdDraw.pause(6000);
+                break;
+            }
+            if (dir=='q'){
+
+            }
+            pool = move(pool,dir);
+        }
 
     }
+
+    private void hud(Pool pool) {
+        int mousex = (int) StdDraw.mouseX();
+        int mousey = (int) StdDraw.mouseY();
+        Font font = new Font("Georgia",Font.PLAIN,14);
+        StdDraw.setFont(font);
+        if (pool.getWorld()[mousex][mousey].equals(Tileset.WALL)){
+            ter.renderFrame(pool.getWorld());
+            StdDraw.enableDoubleBuffering();
+            StdDraw.setPenColor(Color.white);
+            StdDraw.textLeft(1, HEIGHT-1, "Whoops! Here is the pool's wall");
+        } else if (pool.getWorld()[mousex][mousey].equals(Tileset.WATER)) {
+            ter.renderFrame(pool.getWorld());
+            StdDraw.enableDoubleBuffering();
+            StdDraw.setPenColor(Color.white);
+            StdDraw.textLeft(1, HEIGHT-1, "Here is the vapor-eon, condensing the power of water");
+        } else if (pool.getWorld()[mousex][mousey].equals(Tileset.TREE)) {
+            ter.renderFrame(pool.getWorld());
+            StdDraw.enableDoubleBuffering();
+            StdDraw.setPenColor(Color.white);
+            StdDraw.textLeft(1, HEIGHT-1, "Here is the mutated fish, try to avoid them");
+        }else if (pool.getWorld()[mousex][mousey].equals(Tileset.FLOOR)){
+            ter.renderFrame(pool.getWorld());
+            StdDraw.enableDoubleBuffering();
+            StdDraw.setPenColor(Color.white);
+            StdDraw.textLeft(1, HEIGHT-1, "Here is the water you swim in");
+        }else if (pool.getWorld()[mousex][mousey].equals(Tileset.PLAYER)){
+            ter.renderFrame(pool.getWorld());
+            StdDraw.enableDoubleBuffering();
+            StdDraw.setPenColor(Color.white);
+            StdDraw.textLeft(1, HEIGHT-1, "Yourself, a little yellow duck");
+        }else if (pool.getWorld()[mousex][mousey].equals(Tileset.LOCKED_DOOR)){
+            ter.renderFrame(pool.getWorld());
+            StdDraw.enableDoubleBuffering();
+            StdDraw.setPenColor(Color.white);
+            StdDraw.textLeft(1, HEIGHT-1, "The door, open it!");
+        }else {
+            ter.renderFrame(pool.getWorld());
+            StdDraw.enableDoubleBuffering();
+            StdDraw.setPenColor(Color.white);
+            StdDraw.textLeft(1, HEIGHT-1, "Unknown. What's next?");
+        }
+        StdDraw.textRight(WIDTH-1, HEIGHT - 1, "Your Health Value: " + health);
+        StdDraw.textRight(WIDTH-1,HEIGHT-2,"Your blessing value: "+blessing);
+        StdDraw.show();
+    }
+
     /**
      * Method used for autograding and testing the game code. The input string will be a series
      * of characters (for example, "n123sswwdasdassadwas", "n123sss:q", "lwww". The game should
@@ -133,6 +216,7 @@ public class Game {
         // drawn if the same inputs had been given to playWithKeyboard().
 
         TETile[][] finalWorldFrame = null;
+        Pool finalPool = null;
         StringBuilder seed = new StringBuilder();
         if (input.charAt(0)=='n'||input.charAt(0)=='N'){
             for (int i = 1; i < input.length(); i++) {
@@ -142,11 +226,13 @@ public class Game {
                 seed.append(input.charAt(i));
             }
             SEED = Long.parseLong(String.valueOf(seed));
-            finalWorldFrame = WorldGenerator.fillTiles();
+            finalPool = WorldGenerator.fillTiles();
+            finalWorldFrame = finalPool.getWorld();
 
         }
         if (input.contains("l")||input.contains("L")){
-            finalWorldFrame = load();
+            finalPool = load();
+            finalWorldFrame = finalPool.getWorld();
         }
 
         if (input.endsWith(":q")||input.endsWith(":Q")){
@@ -156,22 +242,86 @@ public class Game {
         return finalWorldFrame;
     }
 
-    public void move(TETile[][] world, char dir){
+    public Pool move(Pool pool, char dir){
+        TETile up = pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()+1];
+        TETile down = pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()-1];
+        TETile left = pool.getWorld()[pool.getPlayer().getX()-1][pool.getPlayer().getY()];
+        TETile right = pool.getWorld()[pool.getPlayer().getX()+1][pool.getPlayer().getY()];
         switch (dir){
-            case 'W':{//up
-
+            case 'W':
+            case 'w':{//up
+                if (up.equals(Tileset.WALL)){
+                    return pool;
+                }else{
+                    if (up.equals(Tileset.WATER)){
+                        health++;
+                        blessing++;
+                    } else if (up.equals(Tileset.TREE)) {
+                        health--;
+                    }
+                    pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()+1]=Tileset.PLAYER;
+                    pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()]=Tileset.FLOOR;
+                    Position player = new Position(pool.getPlayer().getX(),pool.getPlayer().getY()+1);
+                    return new Pool(player,pool.getWorld());
+                }
             }
+            case 's':
             case 'S':{//down
-
+                if (down.equals(Tileset.WALL)){
+                    return pool;
+                }else if (down.equals(Tileset.LOCKED_DOOR)){
+                    gameOver=true;
+                    return pool;
+                }else{
+                    if (down.equals(Tileset.WATER)){
+                        health++;
+                        blessing++;
+                    } else if (down.equals(Tileset.TREE)) {
+                        health--;
+                    }
+                    pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()-1]=Tileset.PLAYER;
+                    pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()]=Tileset.FLOOR;
+                    Position player = new Position(pool.getPlayer().getX(),pool.getPlayer().getY()-1);
+                    return new Pool(player,pool.getWorld());
+                }
             }
+            case 'a':
             case 'A':{//left
-
+                if (left.equals(Tileset.WALL)){
+                    return pool;
+                }else{
+                    if (left.equals(Tileset.WATER)) {
+                        health++;
+                        blessing++;
+                    } else if (left.equals(Tileset.TREE)) {
+                        health--;
+                    }
+                    pool.getWorld()[pool.getPlayer().getX()-1][pool.getPlayer().getY()]=Tileset.PLAYER;
+                    pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()]=Tileset.FLOOR;
+                    Position player = new Position(pool.getPlayer().getX()-1,pool.getPlayer().getY());
+                    return new Pool(player,pool.getWorld());
+                }
             }
-            case 'D':{//right
-
+            case 'd':
+            case 'D':{
+                //right
+                if (right.equals(Tileset.WALL)){
+                    return pool;
+                }else{
+                    if (right.equals(Tileset.WATER)) {
+                        health++;
+                        blessing++;
+                    } else if (right.equals(Tileset.TREE)) {
+                        health--;
+                    }
+                    pool.getWorld()[pool.getPlayer().getX()+1][pool.getPlayer().getY()]=Tileset.PLAYER;
+                    pool.getWorld()[pool.getPlayer().getX()][pool.getPlayer().getY()]=Tileset.FLOOR;
+                    Position player = new Position(pool.getPlayer().getX()+1,pool.getPlayer().getY());
+                    return new Pool(player,pool.getWorld());
+                }
             }
             default:{
-                return;
+                return pool;
             }
         }
     }
@@ -182,7 +332,7 @@ public class Game {
 
     }
 
-    public TETile[][] load(){
+    public Pool load(){
         return null;
     }
 

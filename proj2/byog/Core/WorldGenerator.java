@@ -17,7 +17,7 @@ public class WorldGenerator {
     public static final int HEIGHT = 40;
     private static final int MAX_ROOM = 50;
 
-    public static TETile[][] fillTiles(){
+    public static Pool fillTiles(){
         TETile[][] world = new TETile[WIDTH][HEIGHT];
         Random random = new Random(SEED+1000);
         for (int x = 0; x < WIDTH; x += 1) {
@@ -35,8 +35,30 @@ public class WorldGenerator {
             Path.fillPath(path,world);
 //            System.out.println(path.srcX+" "+path.srcY+" "+path.dstX+" "+path.dstY);
         }
-        doorPlayer(world,rooms);
-        return world;
+        Position player = doorPlayer(world,rooms);
+        setVapor(world,pathArrayList);
+        setFish(world, rooms);
+        return new Pool(player,world);
+    }
+
+    private static void setFish(TETile[][] world, ArrayList<Rectangle> rooms) {
+        Random random = new Random(SEED+40);
+        int cnt = 5;
+        for (int i = 0; i < cnt; i++) {
+            int f = random.nextInt(rooms.size()-1);
+            int fx = rooms.get(f).left+random.nextInt(rooms.get(f).getWidth()-2)+1;
+            int fy = rooms.get(f).bottom+random.nextInt(rooms.get(f).getHeight()-2)+1;
+            world[fx][fy] = Tileset.TREE;
+        }
+    }
+
+    private static void setVapor(TETile[][] world, ArrayList<Path> paths) {
+        Random random = new Random(SEED);
+        int cnt = 4;
+        for (int i = 0; i < cnt; i++) {
+            int p = random.nextInt(paths.size()-1);
+            world[paths.get(p).cX][paths.get(p).cY]=Tileset.WATER;
+        }
     }
 
     public static ArrayList<Rectangle> makeManyRooms(TETile[][] world, int roomNum){
@@ -125,24 +147,31 @@ public class WorldGenerator {
         }
     }
 
-    private static void player(TETile[][] world, ArrayList<Rectangle> rooms) {
-        Random random = new Random(SEED);
+    private static Position player(TETile[][] world, ArrayList<Rectangle> rooms) {
+        Random random = new Random(SEED+10);
         Rectangle picked = rooms.get(random.nextInt(rooms.size()));
         int x = picked.getLeft()+random.nextInt((picked.getWidth()-2)/2)+1;
         int y = picked.getBottom()+random.nextInt((picked.getHeight()-2)/2)+1;
         world[x][y] = Tileset.PLAYER;
+        return new Position(x,y);
     }
 
-    private static void doorPlayer(TETile[][] world, ArrayList<Rectangle> rooms){
+    private static Position doorPlayer(TETile[][] world, ArrayList<Rectangle> rooms){
         Random random = new Random(SEED);
         Rectangle picked = rooms.get(random.nextInt(rooms.size()));
 
         Position door = new Position(picked.getLeft()+random.nextInt(picked.getWidth()-2)+1,picked.getBottom());
-        if (world[door.getX()][door.getY()]==Tileset.WALL) {
+
+        findWall(world,door);
+        return player(world,rooms);
+    }
+
+    private static void findWall(TETile[][] world,Position door) {
+        if (world[door.getX()][door.getY()]==Tileset.WALL){
             world[door.getX()][door.getY()] = Tileset.LOCKED_DOOR;
-        }else{
-
+        }else {
+            door = new Position(door.getX(), door.getY()-1);
+            findWall(world,door);
         }
-
     }
 }
