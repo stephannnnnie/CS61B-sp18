@@ -3,7 +3,10 @@ package byog.Core;
 import byog.TileEngine.TETile;
 import byog.TileEngine.Tileset;
 
-public class Path {
+import java.io.Serializable;
+
+public class Path implements Serializable {
+    private static final long serialVersionUID=4L;
     int srcX;
     int srcY;
     int dstX;

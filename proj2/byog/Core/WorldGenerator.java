@@ -4,6 +4,7 @@ import byog.TileEngine.TETile;
 import byog.TileEngine.Tileset;
 import javafx.geometry.Pos;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Random;
@@ -11,7 +12,8 @@ import java.util.Random;
 import static byog.Core.Game.SEED;
 
 
-public class WorldGenerator {
+public class WorldGenerator implements Serializable {
+    private static final long serialVersionUID=121L;
 
     public static final int WIDTH = 80;
     public static final int HEIGHT = 40;
@@ -43,7 +45,7 @@ public class WorldGenerator {
 
     private static void setFish(TETile[][] world, ArrayList<Rectangle> rooms) {
         Random random = new Random(SEED+40);
-        int cnt = 5;
+        int cnt = 10;
         for (int i = 0; i < cnt; i++) {
             int f = random.nextInt(rooms.size()-1);
             int fx = rooms.get(f).left+random.nextInt(rooms.get(f).getWidth()-2)+1;
@@ -54,7 +56,7 @@ public class WorldGenerator {
 
     private static void setVapor(TETile[][] world, ArrayList<Path> paths) {
         Random random = new Random(SEED);
-        int cnt = 4;
+        int cnt = 5;
         for (int i = 0; i < cnt; i++) {
             int p = random.nextInt(paths.size()-1);
             world[paths.get(p).cX][paths.get(p).cY]=Tileset.WATER;

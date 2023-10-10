@@ -3,7 +3,10 @@ package byog.Core;
 import byog.TileEngine.TETile;
 import byog.TileEngine.Tileset;
 
-public class Rectangle {
+import java.io.Serializable;
+
+public class Rectangle implements Serializable {
+    private static final long serialVersionUID=3L;
     int left;
     //左边界的坐标
     int right;

@@ -1,5 +1,6 @@
 package byog.Core;
 
+import byog.SaveDemo.World;
 import byog.TileEngine.TERenderer;
 import byog.TileEngine.TETile;
 import byog.TileEngine.Tileset;
@@ -7,12 +8,13 @@ import edu.princeton.cs.introcs.StdDraw;
 import org.junit.Test;
 
 import java.awt.*;
+import java.io.*;
 import java.util.Random;
 
 /**
  * @author sheldon
  */
-public class Game {
+public class Game implements Serializable{
     TERenderer ter = new TERenderer();
     /* Feel free to change the width and height. */
     public static final int WIDTH = 80;
@@ -80,6 +82,7 @@ public class Game {
                 gameOver=true;
                 System.exit(0);
                 break;
+                //这里是还未进入游戏就退出了，所以不需要保存
             }
         }
     }
@@ -144,8 +147,14 @@ public class Game {
                 StdDraw.pause(6000);
                 break;
             }
+            //在游戏中途保存退出
             if (dir=='q'){
-
+                save(pool);
+                StdDraw.clear(Color.BLACK);
+                drawNote("Already saved your game~");
+                StdDraw.pause(4000);
+                gameOver=true;
+                System.exit(0);
             }
             pool = move(pool,dir);
         }
@@ -215,29 +224,60 @@ public class Game {
         // and return a 2D tile representation of the world that would have been
         // drawn if the same inputs had been given to playWithKeyboard().
 
-        TETile[][] finalWorldFrame = null;
+        TETile[][] finalWorldFrame = new TETile[WIDTH][HEIGHT];
+        for (int x = 0; x < WIDTH; x += 1) {
+            for (int y = 0; y < HEIGHT; y += 1) {
+                finalWorldFrame[x][y] = Tileset.NOTHING;
+            }
+        }
         Pool finalPool = null;
         StringBuilder seed = new StringBuilder();
+        int start=0;
         if (input.charAt(0)=='n'||input.charAt(0)=='N'){
             for (int i = 1; i < input.length(); i++) {
                 if (input.charAt(i)=='S'||input.charAt(i)=='s'){
+                    start = i+1;
                     break;
                 }
                 seed.append(input.charAt(i));
             }
             SEED = Long.parseLong(String.valueOf(seed));
             finalPool = WorldGenerator.fillTiles();
-            finalWorldFrame = finalPool.getWorld();
+//            finalWorldFrame = finalPool.getWorld();
+            for (int i = start;i<input.length();i++){
+                finalPool = move(finalPool,input.charAt(i));
+                if((input.charAt(i)==':'&&input.charAt(i+1)=='q')||(input.charAt(i)==':'&&input.charAt(i+1)=='Q')){
+                    gameOver=true;
+                    save(finalPool);
+                    break;
+                }
+            }return finalPool.getWorld();
 
         }
         if (input.contains("l")||input.contains("L")){
             finalPool = load();
             finalWorldFrame = finalPool.getWorld();
+            int index = input.lastIndexOf('l');
+            if (index==-1){
+                index = input.lastIndexOf('L');
+            }
+            for (int i = index+1;i<input.length();i++){
+                if (input.charAt(i) == ':' && input.charAt(i + 1) == 'q'|| (input.charAt(i) == ':' && input.charAt(i + 1) == 'Q')) {
+                    gameOver = true;
+                    save(finalPool);
+                    break;
+                }
+                finalPool = move(finalPool,input.charAt(i));
+            }
         }
 
-        if (input.endsWith(":q")||input.endsWith(":Q")){
-            save(finalWorldFrame);
-            return finalWorldFrame;
+        if (input.contains(":q")||input.contains(":Q")){
+            save(finalPool);
+            if (finalPool!=null) {
+                return finalPool.getWorld();
+            }else{
+                return finalWorldFrame;
+            }
         }
         return finalWorldFrame;
     }
@@ -328,12 +368,47 @@ public class Game {
 
 
 
-    public void save(TETile[][] world){
+    public static void save(Pool pool){
+        File file = new File("./pool.txt");
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            FileOutputStream fs = new FileOutputStream(file);
+            ObjectOutputStream os = new ObjectOutputStream(fs);
+            os.writeObject(pool);
+            os.close();
+        }  catch (FileNotFoundException e) {
+            System.out.println("file not found");
+            System.exit(0);
+        } catch (IOException e) {
+            System.out.println(e);
+            System.exit(0);
+        }
 
     }
 
     public Pool load(){
-        return null;
+        File file = new File("./pool.txt");
+        if (file.exists()) {
+            try {
+                FileInputStream fs = new FileInputStream(file);
+                ObjectInputStream os = new ObjectInputStream(fs);
+                Pool loadWorld = (Pool) os.readObject();
+                os.close();
+                return loadWorld;
+            } catch (FileNotFoundException e) {
+                System.out.println("file not found");
+                System.exit(0);
+            } catch (IOException e) {
+                System.out.println(e);
+                System.exit(0);
+            } catch (ClassNotFoundException e) {
+                System.out.println("class not found");
+                System.exit(0);
+            }
+        }
+        return new Pool();
     }
 
 
