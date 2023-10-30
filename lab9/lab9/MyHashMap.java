@@ -1,5 +1,6 @@
 package lab9;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -17,8 +18,10 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     private ArrayMap<K, V>[] buckets;
     private int size;
 
-    private int loadFactor() {
-        return size / buckets.length;
+    private double loadFactor() {
+//        System.out.println(size/ buckets.length);
+        return (double) size / buckets.length;
+
     }
 
     public MyHashMap() {
@@ -48,24 +51,51 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         return Math.floorMod(key.hashCode(), numBuckets);
     }
 
-    /* Returns the value to which the specified key is mapped, or null if this
+    /** Returns the value to which the specified key is mapped, or null if this
      * map contains no mapping for the key.
      */
     @Override
     public V get(K key) {
-        throw new UnsupportedOperationException();
+        if (key==null){
+            throw new IllegalArgumentException("argument to get is null");
+        }
+        return buckets[hash(key)].get(key);
+
     }
 
     /* Associates the specified value with the specified key in this map. */
     @Override
     public void put(K key, V value) {
-        throw new UnsupportedOperationException();
+        if (key == null) {
+            throw new IllegalArgumentException("Null key not allowed.");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("Null values not allowed.");
+        }
+        if (loadFactor()>MAX_LF){
+            ArrayMap<K,V>[] newMap = new ArrayMap[2* buckets.length];
+            for (int i = 0; i < newMap.length; i++) {
+                newMap[i] = new ArrayMap<>();
+                //该死这一个初始化让我debug了一整天；为啥用foreach就不对非得用fori
+            }
+            System.arraycopy(buckets,0,newMap,0,buckets.length);
+            buckets = newMap;
+        }
+        System.out.println(hash(key)+" "+buckets.length);
+        System.out.println(Arrays.toString(buckets));
+        if (!buckets[hash(key)].containsKey(key)){
+            size++;
+        }
+        buckets[hash(key)].put(key, value);
+
     }
+
+
 
     /* Returns the number of key-value mappings in this map. */
     @Override
     public int size() {
-        throw new UnsupportedOperationException();
+        return size;
     }
 
     //////////////// EVERYTHING BELOW THIS LINE IS OPTIONAL ////////////////
