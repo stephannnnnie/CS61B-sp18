@@ -13,6 +13,9 @@ public class ComplexOomage implements Oomage {
     public int hashCode() {
         int total = 0;
         for (int x : params) {
+            if (total>=Integer.MAX_VALUE-1||total<0){
+                total=Math.floorMod(total,254);
+            }
             total = total * 256;
             total = total + x;
         }
